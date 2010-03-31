@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 
 describe DbCharmer::ConnectionFactory do
-  describe "in generate_abstract_class method" do
+  context "in generate_abstract_class method" do
     it "should not fail if requested connection config does not exists" do
       lambda { DbCharmer::ConnectionFactory.generate_abstract_class('foo') }.should_not raise_error
     end
@@ -19,11 +19,18 @@ describe DbCharmer::ConnectionFactory do
       klass.superclass.should be(ActiveRecord::Base)
     end
   end
-  
-  describe "in establish_connection method" do
+
+  context "in generate_empty_abstract_ar_class method" do
+    it "should generate an abstract connection class" do
+      klass = DbCharmer::ConnectionFactory.generate_empty_abstract_ar_class('::MyFooAbstractClass')
+      klass.superclass.should be(ActiveRecord::Base)
+    end
+  end
+
+  context "in establish_connection method" do
     it "should generate an abstract class" do
       klass = mock('AbstractClass')
-      conn = mock('connection')
+      conn = mock('connection1')
       klass.stub!(:retrieve_connection).and_return(conn)
       DbCharmer::ConnectionFactory.should_receive(:generate_abstract_class).and_return(klass)
       DbCharmer::ConnectionFactory.establish_connection(:foo).should be(conn)
@@ -36,21 +43,66 @@ describe DbCharmer::ConnectionFactory do
       DbCharmer::ConnectionFactory.establish_connection(:foo)
     end
   end
-  
-  describe "in connect method" do
+
+  context "in establish_connection_to_db method" do
+    it "should generate an abstract class" do
+      klass = mock('AbstractClass')
+      conn =  mock('connection2')
+      klass.stub!(:establish_connection)
+      klass.stub!(:retrieve_connection).and_return(conn)
+      DbCharmer::ConnectionFactory.should_receive(:generate_empty_abstract_ar_class).and_return(klass)
+      DbCharmer::ConnectionFactory.establish_connection_to_db(:foo, :username => :foo).should be(conn)
+    end
+
+    it "should create and return a connection proxy for the abstract class" do
+      klass = mock('AbstractClass')
+      klass.stub!(:establish_connection)
+      DbCharmer::ConnectionFactory.should_receive(:generate_empty_abstract_ar_class).and_return(klass)
+      DbCharmer::ConnectionProxy.should_receive(:new).with(klass, :foo)
+      DbCharmer::ConnectionFactory.establish_connection_to_db(:foo, :username => :foo)
+    end
+  end
+
+  context "in connect method" do
     before do
       DbCharmer::ConnectionFactory.reset!
     end
-    
+
     it "should return a connection proxy" do
       DbCharmer::ConnectionFactory.connect(:logs).should be_kind_of(ActiveRecord::ConnectionAdapters::AbstractAdapter)
     end
-    
-    it "should memoize proxies" do
-      conn = mock('connection')
-      DbCharmer::ConnectionFactory.should_receive(:establish_connection).with('foo', false).once.and_return(conn)
-      DbCharmer::ConnectionFactory.connect(:foo)
-      DbCharmer::ConnectionFactory.connect(:foo)
-    end
+
+# should_receive is evil on a singletone classes
+#    it "should memoize proxies" do
+#      conn = mock('connection3')
+#      DbCharmer::ConnectionFactory.should_receive(:establish_connection).with('foo', false).once.and_return(conn)
+#      DbCharmer::ConnectionFactory.connect(:foo)
+#      DbCharmer::ConnectionFactory.connect(:foo)
+#    end
   end
+
+  context "in connect_to_db method" do
+    before do
+      DbCharmer::ConnectionFactory.reset!
+      @conf = {
+        :adapter => 'mysql',
+        :username => "db_charmer_ro",
+        :database => "db_charmer_sandbox_test",
+        :name => 'sanbox_ro'
+      }
+    end
+
+    it "should return a connection proxy" do
+      DbCharmer::ConnectionFactory.connect_to_db(@conf[:name], @conf).should be_kind_of(ActiveRecord::ConnectionAdapters::AbstractAdapter)
+    end
+
+# should_receive is evil on a singletone classes
+#    it "should memoize proxies" do
+#      conn = mock('connection4')
+#      DbCharmer::ConnectionFactory.should_receive(:establish_connection_to_db).with(@conf[:name], @conf).once.and_return(conn)
+#      DbCharmer::ConnectionFactory.connect_to_db(@conf[:name], @conf)
+#      DbCharmer::ConnectionFactory.connect_to_db(@conf[:name], @conf)
+#    end
+  end
+
 end
