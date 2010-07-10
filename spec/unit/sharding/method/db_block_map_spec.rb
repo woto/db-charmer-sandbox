@@ -4,14 +4,32 @@ describe DbCharmer::Sharding::Method::DbBlockMap do
   fixtures :event_shards_info, :event_shards_map
 
   before(:each) do
-    @sharder = DbCharmer::Sharding::Method::DbBlockMap.new(
+    @sharder ||= DbCharmer::Sharding::Method::DbBlockMap.new(
       :name => :social,
       :block_size => 10,
       :map_table => :event_shards_map,
       :shards_table => :event_shards_info,
       :connection => :social_shard_info
     )
-    @conn = DbCharmer::ConnectionFactory.connect(:social_shard_info)
+    @conn ||= DbCharmer::ConnectionFactory.connect(:social_shard_info)
+    
+=begin
+    # Initialize shards table
+    DbCharmer::Sharding::Method::DbBlockMap::ShardInfo.on_db(@conn) do |shard_info|
+      shard_info.delete_all
+      [ 1, 2 ].each do |shard_id|
+        shard_info.create! do |s|
+          s.id = shard_id
+          s.db_host = 'localhost'
+          s.db_user = 'db_charmer'
+          s.db_pass = 'charmer_pass'
+          s.db_name = "db_charmer_events_test_shard0#{shard_id}"
+          s.open = true
+          s.enabled = true
+        end
+      end
+    end
+=end
   end
 
   describe "standard interface" do
