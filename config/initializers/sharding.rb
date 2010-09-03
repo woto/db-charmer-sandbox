@@ -23,3 +23,17 @@ SOCIAL_SHARDING = DbCharmer::Sharding.register_connection(
   :shards_table => :event_shards_info,
   :connection => :social_shard_info
 )
+
+#-----------------------------------------------
+# Hash map sharding
+SHARDING_MAP = {
+  'US'  => :us_parts,
+  'CA'  => :ca_parts,
+  :default  => :other_parts
+}
+
+DbCharmer::Sharding.register_connection(
+  :name => :something,
+  :method => :hash_map,
+  :map => SHARDING_MAP
+)

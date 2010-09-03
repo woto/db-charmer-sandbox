@@ -4,7 +4,7 @@ common: &common
   reconnect: false
   pool: 1
   username: root
-  password:
+  password: 
 
 #----------------------------------------------------------------
 test:
@@ -19,7 +19,7 @@ test:
   # slave database
   slave01:
     <<: *common
-    username: db_charmer_ro
+    #username: db_charmer_ro
     database: db_charmer_sandbox_test
 
   user_master:
@@ -54,7 +54,7 @@ test22:
   # slave database
   slave01:
     <<: *common
-    username: db_charmer_ro
+    #username: db_charmer_ro
     database: db_charmer_sandbox22_test
 
   user_master:
